@@ -1,67 +1,122 @@
 # AI 多模态生成 Agent
 
+[![GitHub stars](https://img.shields.io/github/stars/XIngJIuuu/ai-multimodal-agent.svg)](https://github.com/XIngJIuuu/ai-multimodal-agent/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/XIngJIuuu/ai-multimodal-agent.svg)](https://github.com/XIngJIuuu/ai-multimodal-agent/network)
+[![GitHub license](https://img.shields.io/github/license/XIngJIuuu/ai-multimodal-agent.svg)](https://github.com/XIngJIuuu/ai-multimodal-agent/blob/main/LICENSE)
+
 基于 LangGraph 和 Streamlit 构建的 AI 视频/图片生成平台，支持多种主流 AI 模型，提供素材上传、局部优化、记忆模块等功能。
 
-## 功能特性
+## ✨ 功能特性
 
 ### 🎬 视频生成模式
-- 支持 Pika、Runway、Sora、Seedance、OpenAI、Claude 等多种视频生成 API
-- 完整工作流：Planner → Generate Prompt → Call Video API → Generate Subtitles → Export
-- 支持首尾帧控制（Seedance）
-- 局部优化：可针对特定场景进行风格、人物、背景、色彩、构图优化
+- **多 API 支持**：Pika、Runway、Sora、Seedance、OpenAI、Claude、Gemini、DeepSeek
+- **完整工作流**：Planner → Generate Prompt → Call Video API → Generate Subtitles → Export
+- **首尾帧控制**：Seedance API 支持上传首帧和尾帧图片，精确控制视频起止画面
+- **局部优化**：可针对特定场景进行风格、人物、背景、色彩、构图优化，无需重新生成整个视频
 
 ### 🖼️ 图片生成模式
-- 支持 DALL-E 3、Stable Diffusion、Midjourney、Leonardo AI、Bing 等多种图片生成 API
-- 支持自定义尺寸、风格、负面提示词
-- 一次生成多张图片
-- 支持固定随机种子保证结果可重复
+- **多 API 支持**：DALL-E 3、GPT Image、Stable Diffusion、Midjourney、Leonardo AI、Bing
+- **GPT Image**：结合 GPT-4o 的逻辑推理能力和 DALL-E 3 的图像生成能力，智能优化提示词
+- **自定义参数**：尺寸、风格、负面提示词、生成数量、随机种子
+- **批量生成**：一次生成 1-10 张图片
 
 ### 📁 素材管理
-- 支持上传图片、视频、音频、文本等素材
-- AI 自动描述素材内容
-- 素材预览和引用
+- **多类型支持**：图片（jpg、jpeg、png、webp）、视频（mp4、mov、avi）、音频（mp3、wav）、文本（txt）
+- **AI 自动描述**：上传文本素材时，系统自动使用 AI 生成内容摘要
+- **素材预览**：已上传的图片、视频、音频可直接在界面上预览
 
 ### 🧠 记忆模块
-- 自动保存创作记忆（视频计划、场景提示词、视频结果、字幕等）
-- AI 生成前自动检索相关记忆
-- 用户可主动搜索、引用、删除记忆
+- **自动保存**：每次生成完成后自动保存创作记忆（视频计划、场景提示词、视频结果、字幕等）
+- **智能检索**：AI 生成前自动搜索与用户需求相关的历史记忆
+- **用户主动调用**：支持关键词搜索、语义搜索、引用、删除记忆
 
 ### 🔌 通用接口
-- 支持配置任意第三方 API
-- 自定义请求头、请求体、HTTP 方法
+- **灵活适配**：支持配置任意第三方视频/图片生成 API
+- **自定义配置**：自定义请求头、请求体、HTTP 方法（POST/GET）
 
-## 项目结构
+## 🏗️ 架构设计
 
 ```
-video/
-├── agent/                  # 核心 Agent 模块
-│   ├── __init__.py         # 包初始化
-│   ├── model_manager.py    # 模型管理（LLM、视频API、图片API）
-│   ├── video_agent.py      # 视频生成工作流
-│   ├── image_agent.py      # 图片生成工作流
-│   └── memory_manager.py   # 记忆管理模块
-├── ui/                     # 用户界面
-│   └── app.py              # Streamlit 应用
-├── memory/                 # 记忆存储目录（自动创建）
-├── assets/                 # 素材存储目录（自动创建）
-├── .env.example            # 环境变量示例
-├── requirements.txt        # 依赖列表
-└── README.md               # 使用指南
+┌─────────────────────────────────────────────────────────────┐
+│                    Streamlit UI 界面                        │
+├─────────────────────────────────────────────────────────────┤
+│  视频模式 │ 图片模式 │ 素材管理 │ 记忆模块 │ 通用接口配置    │
+└───────────────────┬─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   LangGraph 工作流                          │
+├─────────────────────────────────────────────────────────────┤
+│  视频工作流:                                                 │
+│    memory_retrieval → planner → generate_prompt             │
+│    → call_video_api → generate_subtitles → export          │
+│                                                            │
+│  图片工作流:                                                 │
+│    memory_retrieval → generate_image_prompt                 │
+│    → call_image_api → export_images → save_memory          │
+│                                                            │
+│  优化工作流:                                                 │
+│    local_optimization → regenerate_single_scene            │
+│    → generate_subtitles → export                            │
+└───────────────────┬─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Model Manager                            │
+├─────────────────────────────────────────────────────────────┤
+│  LLM: OpenAI / Claude / Gemini / DeepSeek                  │
+│  Video API: Pika / Runway / Sora / Seedance / Custom       │
+│  Image API: DALL-E 3 / GPT Image / SD / Midjourney / Custom│
+└───────────────────┬─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    数据存储                                  │
+├─────────────────────────────────────────────────────────────┤
+│  memory/ → 创作记忆 (Markdown 文件)                         │
+│  assets/ → 上传素材                                         │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## 安装步骤
+## 📁 项目结构
+
+```
+ai-multimodal-agent/
+├── agent/                    # 核心 Agent 模块
+│   ├── __init__.py           # 包初始化
+│   ├── model_manager.py      # 模型管理（LLM、视频API、图片API）
+│   ├── video_agent.py        # 视频生成工作流
+│   ├── image_agent.py        # 图片生成工作流
+│   └── memory_manager.py     # 记忆管理模块
+├── ui/                       # 用户界面
+│   └── app.py                # Streamlit 应用
+├── .streamlit/               # Streamlit 配置
+│   └── config.toml           # 配置文件
+├── .env.example              # 环境变量示例
+├── .gitignore                # Git 忽略配置
+├── requirements.txt          # 依赖列表
+└── README.md                 # 使用指南
+```
+
+## 🚀 快速开始
 
 ### 1. 克隆项目
 
 ```bash
-cd e:\project\video
+git clone https://github.com/XIngJIuuu/ai-multimodal-agent.git
+cd ai-multimodal-agent
 ```
 
 ### 2. 创建虚拟环境（推荐）
 
 ```bash
 python -m venv venv
+
+# Windows
 venv\Scripts\activate
+
+# macOS/Linux
+source venv/bin/activate
 ```
 
 ### 3. 安装依赖
@@ -75,6 +130,10 @@ pip install -r requirements.txt
 复制 `.env.example` 为 `.env`，并填入 API Key：
 
 ```bash
+# Windows
+copy .env.example .env
+
+# macOS/Linux
 cp .env.example .env
 ```
 
@@ -100,7 +159,7 @@ VIDEO_API_KEY=your-video-api-key
 IMAGE_API_KEY=your-image-api-key
 ```
 
-## 启动应用
+### 5. 启动应用
 
 ```bash
 streamlit run ui/app.py
@@ -108,7 +167,7 @@ streamlit run ui/app.py
 
 访问 http://localhost:8501 即可使用应用。
 
-## 使用指南
+## 📖 使用指南
 
 ### 一、视频生成
 
@@ -120,7 +179,7 @@ streamlit run ui/app.py
 |------|----------|------|
 | Planner | GPT-4o / Claude 3.5 | 分析需求，制定视频计划 |
 | Generate Prompt | Claude 3.5 / GPT-4o | 生成场景提示词 |
-| Call Video API | Pika / Runway / Seedance | 调用视频生成API |
+| Call Video API | Pika / Runway / Seedance | 调用视频生成 API |
 | Generate Subtitles | Gemini / GPT-4o | 生成字幕 |
 
 #### 2. 输入需求
@@ -134,8 +193,8 @@ streamlit run ui/app.py
 
 - **视频风格**：电影、动画、纪录片、广告、音乐视频、游戏
 - **目标受众**：通用、儿童、青少年、成人、商务人士
-- **时长**：5-180秒
-- **场景数量**：1-10个
+- **时长**：5-180 秒
+- **场景数量**：1-10 个
 - **视觉风格**：色彩、光线、镜头风格
 
 #### 4. Seedance 专属配置
@@ -170,22 +229,21 @@ streamlit run ui/app.py
 
 #### 2. 配置模型
 
-选择图片生成 API：DALL-E 3、Stable Diffusion、Midjourney、Leonardo AI、Bing、通用接口。
+选择图片生成 API：DALL-E 3、GPT Image、Stable Diffusion、Midjourney、Leonardo AI、Bing、通用接口。
 
 #### 3. 配置参数
 
-- **尺寸**：宽度和高度（256-4096像素）
-- **风格**：写实、动漫、插画、油画、素描、3D渲染、赛博朋克、复古
+- **尺寸**：宽度和高度（256-4096 像素）
+- **风格**：写实、动漫、插画、油画、素描、3D 渲染、赛博朋克、复古
 - **负面提示词**：排除不想要的元素（模糊、低质量、水印等）
-- **生成数量**：1-10张图片
+- **生成数量**：1-10 张图片
 - **随机种子**：固定种子保证结果可重复
 
-#### 4. 输入需求
+#### 4. GPT Image 模式
 
-输入图片描述，例如：
-- 一只可爱的猫咪在阳光下睡觉
-- 赛博朋克风格的未来城市夜景
-- 水彩画风格的风景
+GPT Image 采用两步生成策略：
+1. **GPT-4o 优化提示词**：根据简短需求生成详细的图像描述
+2. **DALL-E 3 生成图片**：使用优化后的提示词生成最终图片
 
 ### 三、素材管理
 
@@ -254,7 +312,7 @@ Endpoint: /image/generate
 请求体: {"prompt": "{prompt}", "width": 1024, "height": 1024}
 ```
 
-## 支持的 API
+## 🔌 支持的 API
 
 ### 视频生成 API
 
@@ -275,13 +333,14 @@ Endpoint: /image/generate
 | API | 基础 URL | 说明 |
 |-----|----------|------|
 | DALL-E 3 | https://api.openai.com | OpenAI 图像生成 |
+| GPT Image | https://api.openai.com | GPT-4o + DALL-E 3 智能生成 |
 | Stable Diffusion | https://api.stability.ai | Stability AI |
 | Midjourney | https://api.midjourney.com | Midjourney |
 | Leonardo AI | https://cloud.leonardo.ai | Leonardo AI |
 | Bing | https://api.bing.microsoft.com | Microsoft Bing |
 | 通用接口 | 自定义 | 支持任意 API |
 
-## 依赖说明
+## 📦 依赖说明
 
 ```
 langchain>=0.2.0
@@ -292,13 +351,37 @@ requests>=2.31.0
 pydantic>=2.0.0
 ```
 
-## 注意事项
+## 🤝 贡献指南
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建新分支：`git checkout -b feature/your-feature`
+3. 提交修改：`git commit -m "Add your feature"`
+4. 推送分支：`git push origin feature/your-feature`
+5. 创建 Pull Request
+
+## ⚠️ 注意事项
 
 1. **API Key 安全**：请妥善保管您的 API Key，不要泄露给他人
 2. **网络连接**：确保网络连接稳定，API 调用可能需要较长时间
 3. **内存使用**：生成视频和图片可能占用较多内存，请确保系统资源充足
 4. **文件大小限制**：素材上传有大小限制，建议压缩后上传
+5. **API 费用**：使用第三方 API 会产生费用，请注意控制使用量
 
-## 许可证
+## 📄 许可证
 
 MIT License
+
+## 🙏 致谢
+
+- [LangChain](https://github.com/langchain-ai/langchain) - LLM 框架
+- [LangGraph](https://github.com/langchain-ai/langgraph) - 工作流框架
+- [Streamlit](https://github.com/streamlit/streamlit) - Web 界面框架
+- [Pika](https://pika.art) - 视频生成 API
+- [OpenAI](https://openai.com) - DALL-E 3 / GPT-4o
+- [Seedance](https://seedance.ai) - 视频生成 API
+
+---
+
+**如果这个项目对你有帮助，请给它一个 ⭐！**
